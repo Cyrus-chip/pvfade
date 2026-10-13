@@ -60,3 +60,10 @@ def test_grid_search_forwards_battery_kwargs():
     res = _search(battery_kwargs={"k_cycle": 0.0026, "k_cal": 0.015})
     assert not res.empty
     assert (res["final_retention"] <= 1.0).all()
+
+
+def test_grid_search_forwards_lifetime_kwargs():
+    # initial_soc_frac forwarded to simulate_lifetime changes dispatch
+    res = _search(lifetime_kwargs={"initial_soc_frac": 0.9})
+    assert not res.empty
+    assert len(res) == 4

@@ -1,7 +1,7 @@
 # pvfade
 
 [![CI](https://github.com/chenyi6758-source/pvfade/actions/workflows/ci.yml/badge.svg)](https://github.com/chenyi6758-source/pvfade/actions/workflows/ci.yml)
-[![tests: 30 passed](https://img.shields.io/badge/tests-30%20passed-brightgreen.svg)](tests/)
+[![tests: 43 passed](https://img.shields.io/badge/tests-43%20passed-brightgreen.svg)](tests/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
@@ -65,8 +65,7 @@ print(results.head())
 
 See [`examples/shanghai_household.py`](examples/shanghai_household.py) for a complete runnable example.
 
-
-### Use measured or external weather data
+## Use measured or external weather data
 
 Pass a timezone-indexed `pandas.DataFrame` with `ghi`, `dni` and `dhi` in
 W/m². `temp_air` (°C) and `wind_speed` (m/s) are optional; when omitted,
@@ -90,21 +89,34 @@ Naive timestamps are localised to `tz`; timezone-aware timestamps are
 converted to it. The frame is not resampled, so the output contains one row
 per input timestamp. See the function docstring for validation rules.
 
-
+## Input contracts
 
 Dispatch inputs must be one-dimensional, finite, non-negative power profiles.
 The profiles must contain at least one value, and `dt_h` must be a finite
 positive timestep in hours. Invalid inputs raise `ValueError` rather than
 silently producing misleading energy balances.
+
 ## Why this doesn't exist yet
 
 PV-yield tools (pvlib) model generation beautifully but stop at the meter. Battery tools (PyBaMM) model electrochemistry beautifully but stop at the cell terminals. Techno-economic studies usually bolt a *constant* battery onto a PV profile and call it a sizing study — while the literature (e.g. recent solar-plus-storage sizing work) explicitly flags that neglecting long-term cycling and degradation biases lifecycle cost. pvfade is the missing coupling layer: physics-informed fade inside the economic loop.
+
+## How pvfade compares
+
+|  | Spreadsheet sizing | pvlib + manual dispatch | pvfade |
+|---|---|---|---|
+| PV yield | rule-of-thumb kWh/kWp | pvlib chain | pvlib chain |
+| Battery dispatch | assumed self-consumption ratio | hand-rolled, one year | rule-based, year-by-year |
+| Capacity fade | ignored (100% forever) | ignored or bolted on after | square-root cycle + calendar aging, fed back into dispatch every year |
+| Economics | simple payback on year-1 numbers | whatever you code up | NPV / LCOS / payback on the *faded* series |
+| Sizing | one config at a time | manual loops | `grid_search()` over PV kW × battery kWh, ranked by NPV |
+
+If your study already models degradation properly, you don't need pvfade. Most don't — that's the gap.
 
 ## Model assumptions & limitations
 
 Honest boundaries of v0.1 — these are roadmap items, not hidden caveats:
 
-- **Weather**: clear-sky irradiance scaled by a `clearness` factor, not measured TMY data. Swap in your own weather series via `pv_kw` inputs wherever it matters.
+- **Weather**: by default, clear-sky irradiance scaled by a `clearness` factor — a transparent stand-in, not measured data. Pass your own measured or TMY series via the `weather` argument of `simulate_pv_ac` (see above) wherever it matters.
 - **Battery**: no replacement is modeled — the lifetime simulation stops at end of life (`eol_retention`, default 80% SOH). Calendar aging uses a single coefficient at ~25 °C; temperature- and SOC-dependent aging is future work.
 - **PV modules**: module degradation over the 25-year horizon is not modeled yet.
 - **Dispatch**: rule-based self-consumption maximization only. PyPSA-based LP/MILP dispatch optimization and time-of-use arbitrage arrive in v0.2.

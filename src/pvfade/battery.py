@@ -68,6 +68,8 @@ def capacity_retention(
         raise ValueError("equivalent_full_cycles must be non-negative")
     if years < 0:
         raise ValueError("years must be non-negative")
+    if k_cycle < 0 or k_cal < 0:
+        raise ValueError("k_cycle and k_cal must be non-negative")
     retention = (
         1.0
         - k_cycle * math.sqrt(equivalent_full_cycles)
@@ -103,7 +105,8 @@ def calibrate_cycle_aging_with_pybamm(
 
     Notes
     -----
-    Requires the ``pybamm`` extra: ``pip install pvfade[pybamm]``.
+    Requires the ``pybamm`` extra:
+    ``pip install "pvfade[pybamm] @ git+https://github.com/chenyi6758-source/pvfade.git"``.
     This is an experimental calibration helper; the default ``k_cycle`` is
     used everywhere unless you explicitly call this function.
     """
@@ -112,7 +115,8 @@ def calibrate_cycle_aging_with_pybamm(
     except ImportError as exc:
         raise ImportError(
             "calibrate_cycle_aging_with_pybamm requires PyBaMM: "
-            "pip install pvfade[pybamm]"
+            'pip install "pvfade[pybamm] @ '
+            'git+https://github.com/chenyi6758-source/pvfade.git"'
         ) from exc
 
     pybamm.set_logging_level("ERROR")

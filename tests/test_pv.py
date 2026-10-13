@@ -101,3 +101,10 @@ def test_simulate_pv_ac_rejects_invalid_weather():
     invalid.loc[invalid.index[0], "ghi"] = -1.0
     with pytest.raises(ValueError, match="non-negative"):
         simulate_pv_ac(31.23, 121.47, 5.0, weather=invalid)
+
+
+def test_simulate_pv_ac_rejects_invalid_tilt():
+    with pytest.raises(ValueError, match="tilt"):
+        simulate_pv_ac(31.23, 121.47, 5.0, tilt=200.0)
+    with pytest.raises(ValueError, match="tilt"):
+        simulate_pv_ac(31.23, 121.47, 5.0, tilt=-10.0)

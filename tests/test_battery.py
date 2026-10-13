@@ -35,6 +35,13 @@ def test_capacity_retention_rejects_negative():
         capacity_retention(0.0, -1.0)
 
 
+def test_capacity_retention_rejects_negative_aging_rates():
+    with pytest.raises(ValueError, match="non-negative"):
+        capacity_retention(100.0, 1.0, k_cycle=-0.001)
+    with pytest.raises(ValueError, match="non-negative"):
+        capacity_retention(100.0, 1.0, k_cal=-0.001)
+
+
 def test_battery_spec_validation():
     with pytest.raises(ValueError):
         BatterySpec(nominal_kwh=0.0, charge_kw=1.0, discharge_kw=1.0)

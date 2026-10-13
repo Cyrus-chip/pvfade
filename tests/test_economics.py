@@ -16,6 +16,13 @@ def test_npv_empty_cashflows():
     assert npv(100.0, [], 0.05) == pytest.approx(-100.0)
 
 
+def test_npv_rejects_invalid_discount_rate():
+    with pytest.raises(ValueError, match="discount_rate"):
+        npv(100.0, [60.0], -1.0)
+    with pytest.raises(ValueError, match="discount_rate"):
+        npv(100.0, [60.0], -2.0)
+
+
 def test_lcos_simple_case():
     # 1000 currency capex, 1000 kWh discharged in year 1, no discount
     assert lcos(1000.0, [1000.0], discount_rate=0.0) == pytest.approx(1.0)

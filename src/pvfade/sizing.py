@@ -32,6 +32,7 @@ def grid_search(
     max_years: int = 25,
     c_rate: float = 0.5,
     battery_kwargs: dict | None = None,
+    lifetime_kwargs: dict | None = None,
     **pv_kwargs,
 ) -> pd.DataFrame:
     """Rank PV-storage configurations by net present value.
@@ -57,6 +58,10 @@ def grid_search(
     battery_kwargs : dict, optional
         Extra keyword arguments forwarded to :class:`BatterySpec`, e.g.
         ``{"k_cycle": 0.0026}`` for LFP-like cycle aging.
+    lifetime_kwargs : dict, optional
+        Extra keyword arguments forwarded to
+        :func:`pvfade.dispatch.simulate_lifetime`, e.g.
+        ``{"initial_soc_frac": 0.8}``.
     **pv_kwargs
         Forwarded to :func:`pvfade.pv.simulate_pv_ac`.
 
@@ -66,6 +71,7 @@ def grid_search(
         One row per configuration, sorted by ``npv`` descending.
     """
     battery_kwargs = battery_kwargs or {}
+    lifetime_kwargs = lifetime_kwargs or {}
     rows: list[dict] = []
     pv_cache: dict[float, pd.Series] = {}
     for pv_kw in pv_kw_options:
@@ -81,7 +87,9 @@ def grid_search(
                 discharge_kw=batt_kwh * c_rate,
                 **battery_kwargs,
             )
-            life = simulate_lifetime(pv, load_kw, spec, max_years=max_years)
+            life = simulate_lifetime(
+                pv, load_kw, spec, max_years=max_years, **lifetime_kwargs
+            )
             if life.empty:
                 continue
             years_simulated = int(life["year"].iloc[-1])

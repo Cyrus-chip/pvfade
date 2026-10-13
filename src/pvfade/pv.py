@@ -5,10 +5,11 @@ This module wraps pvlib's modeling chain
     solar position -> clear-sky irradiance -> transposition ->
     cell temperature -> DC -> AC
 
-into a single function returning an hourly AC power time series for a full
-year. Where on-site measurements are unavailable, a clear-sky model scaled by
-a clearness factor is used as a transparent, reproducible stand-in for
-measured weather data.
+into a single function returning an AC power time series. With no
+``weather`` input the chain runs on an Ineichen clear-sky model scaled by a
+clearness factor, returning one hourly row per year; where on-site
+measurements are available, pass them via ``weather`` and the output follows
+the input timestamps instead.
 """
 
 from __future__ import annotations
@@ -178,6 +179,8 @@ def simulate_pv_ac(
         raise ValueError("clearness must be in (0, 1]")
     if tilt is None:
         tilt = abs(latitude)
+    if not 0 <= tilt <= 180:
+        raise ValueError("tilt must be in [0, 180] degrees")
 
     location = pvlib.location.Location(latitude, longitude, tz=tz)
     if weather is None:
