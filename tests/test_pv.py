@@ -81,6 +81,16 @@ def test_simulate_pv_ac_localizes_naive_weather_index():
     assert str(pv.index.tz) == "Asia/Shanghai"
 
 
+def test_simulate_pv_ac_uses_t_mean_when_weather_lacks_temperature():
+    weather = _weather_frame().drop(columns=["temp_air", "wind_speed"])
+    pv = simulate_pv_ac(31.23, 121.47, 5.0, weather=weather, t_mean=30.0)
+    pv_cool = simulate_pv_ac(31.23, 121.47, 5.0, weather=weather, t_mean=10.0)
+
+    assert len(pv) == len(weather)
+    assert (pv >= 0).all()
+    assert pv.sum() < pv_cool.sum()
+
+
 def test_simulate_pv_ac_rejects_invalid_weather():
     index = pd.date_range("2025-06-21 10:00", periods=2, freq="h", tz="Asia/Shanghai")
     missing = pd.DataFrame({"ghi": [1.0, 2.0], "dni": [1.0, 2.0]}, index=index)

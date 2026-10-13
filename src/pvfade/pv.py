@@ -55,6 +55,7 @@ def synthetic_ambient_temperature(
 def _prepare_weather(
     weather: pd.DataFrame,
     tz: str,
+    t_mean: float,
 ) -> tuple[pd.DatetimeIndex, pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
     """Validate and normalise a user-provided weather frame.
 
@@ -95,7 +96,11 @@ def _prepare_weather(
     if (irradiance < 0).any().any():
         raise ValueError("weather irradiance values must be non-negative")
 
-    temp_air = frame["temp_air"] if "temp_air" in frame else synthetic_ambient_temperature(times)
+    temp_air = (
+        frame["temp_air"]
+        if "temp_air" in frame
+        else synthetic_ambient_temperature(times, t_mean=t_mean)
+    )
     wind_speed = frame["wind_speed"] if "wind_speed" in frame else pd.Series(1.0, index=times)
     if not np.isfinite(temp_air.to_numpy(dtype=float)).all() or not np.isfinite(
         wind_speed.to_numpy(dtype=float)
@@ -185,7 +190,9 @@ def simulate_pv_ac(
         temp_air = synthetic_ambient_temperature(times, t_mean=t_mean)
         wind_speed = 1.0
     else:
-        times, dni, ghi, dhi, temp_air, wind_speed = _prepare_weather(weather, tz=tz)
+        times, dni, ghi, dhi, temp_air, wind_speed = _prepare_weather(
+            weather, tz=tz, t_mean=t_mean
+        )
         solpos = location.get_solarposition(times)
 
     total = pvlib.irradiance.get_total_irradiance(
