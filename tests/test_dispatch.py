@@ -61,6 +61,31 @@ def test_dispatch_rejects_mismatched_lengths():
                                   _spec())
 
 
+@pytest.mark.parametrize(
+    "pv, load, message",
+    [
+        (pd.DataFrame([[1.0]]), pd.DataFrame([[1.0]]), "one-dimensional"),
+        (pd.Series([], dtype=float), pd.Series([], dtype=float), "at least one"),
+        (pd.Series([np.nan]), pd.Series([1.0]), "finite"),
+        (pd.Series([1.0]), pd.Series([np.inf]), "finite"),
+    ],
+)
+def test_dispatch_rejects_invalid_profiles(pv, load, message):
+    with pytest.raises(ValueError, match=message):
+        self_consumption_dispatch(pv, load, _spec())
+
+
+def test_dispatch_rejects_invalid_timing_and_capacity():
+    pv = pd.Series([1.0])
+    load = pd.Series([1.0])
+    with pytest.raises(ValueError, match="usable_kwh"):
+        self_consumption_dispatch(pv, load, _spec(), usable_kwh=np.inf)
+    with pytest.raises(ValueError, match="initial_soc_frac"):
+        self_consumption_dispatch(pv, load, _spec(), initial_soc_frac=np.nan)
+    with pytest.raises(ValueError, match="dt_h"):
+        self_consumption_dispatch(pv, load, _spec(), dt_h=0.0)
+
+
 def test_simulate_lifetime_fades_over_time():
     pv = pd.Series(np.full(8760, 2.0))
     load = pd.Series(np.full(8760, 1.5))

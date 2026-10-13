@@ -65,6 +65,11 @@ print(results.head())
 
 See [`examples/shanghai_household.py`](examples/shanghai_household.py) for a complete runnable example.
 
+Dispatch inputs must be one-dimensional, finite, non-negative power profiles.
+The profiles must contain at least one value, and `dt_h` must be a finite
+positive timestep in hours. Invalid inputs raise `ValueError` rather than
+silently producing misleading energy balances.
+
 ## Why this doesn't exist yet
 
 PV-yield tools (pvlib) model generation beautifully but stop at the meter. Battery tools (PyBaMM) model electrochemistry beautifully but stop at the cell terminals. Techno-economic studies usually bolt a *constant* battery onto a PV profile and call it a sizing study — while the literature (e.g. recent solar-plus-storage sizing work) explicitly flags that neglecting long-term cycling and degradation biases lifecycle cost. pvfade is the missing coupling layer: physics-informed fade inside the economic loop.

@@ -50,12 +50,22 @@ def self_consumption_dispatch(
     load = np.asarray(load_kw, dtype=float)
     if pv.shape != load.shape:
         raise ValueError("pv_kw and load_kw must have the same length")
+    if pv.ndim != 1 or load.ndim != 1:
+        raise ValueError("pv_kw and load_kw must be one-dimensional")
+    if pv.size == 0:
+        raise ValueError("pv_kw and load_kw must contain at least one value")
+    if not np.isfinite(pv).all() or not np.isfinite(load).all():
+        raise ValueError("pv_kw and load_kw must contain only finite values")
     if np.any(pv < 0) or np.any(load < 0):
         raise ValueError("pv_kw and load_kw must be non-negative")
 
     usable = spec.nominal_kwh if usable_kwh is None else usable_kwh
-    if usable <= 0:
-        raise ValueError("usable_kwh must be positive")
+    if not np.isfinite(usable) or usable <= 0:
+        raise ValueError("usable_kwh must be a finite positive value")
+    if not np.isfinite(initial_soc_frac):
+        raise ValueError("initial_soc_frac must be finite")
+    if not np.isfinite(dt_h) or dt_h <= 0:
+        raise ValueError("dt_h must be a finite positive value")
     soc_lo = spec.soc_min * usable
     soc_hi = spec.soc_max * usable
     soc = float(np.clip(initial_soc_frac, spec.soc_min, spec.soc_max)) * usable
