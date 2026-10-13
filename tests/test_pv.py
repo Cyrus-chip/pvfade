@@ -43,3 +43,61 @@ def test_synthetic_ambient_temperature_seasonality():
     jul = temp.loc["2025-07"].mean()
     assert jul > jan  # northern hemisphere
     assert abs(temp.mean() - 17.0) < 0.5
+
+
+def _weather_frame(index=None):
+    if index is None:
+        index = pd.date_range(
+            "2025-06-21 10:00", periods=3, freq="h", tz="Asia/Shanghai"
+        )
+    return pd.DataFrame(
+        {
+            "ghi": [700.0, 850.0, 600.0],
+            "dni": [600.0, 750.0, 500.0],
+            "dhi": [100.0, 100.0, 100.0],
+            "temp_air": [25.0, 26.0, 27.0],
+            "wind_speed": [1.0, 2.0, 1.5],
+        },
+        index=index,
+    )
+
+
+def test_simulate_pv_ac_accepts_user_weather():
+    weather = _weather_frame()
+    pv = simulate_pv_ac(31.23, 121.47, 5.0, weather=weather)
+
+    assert pv.index.equals(weather.index)
+    assert len(pv) == len(weather)
+    assert (pv >= 0).all()
+    assert pv.sum() > 0
+
+
+def test_simulate_pv_ac_localizes_naive_weather_index():
+    weather = _weather_frame(
+        pd.date_range("2025-06-21 10:00", periods=3, freq="h")
+    )
+    pv = simulate_pv_ac(31.23, 121.47, 5.0, tz="Asia/Shanghai", weather=weather)
+
+    assert str(pv.index.tz) == "Asia/Shanghai"
+
+
+def test_simulate_pv_ac_uses_t_mean_when_weather_lacks_temperature():
+    weather = _weather_frame().drop(columns=["temp_air", "wind_speed"])
+    pv = simulate_pv_ac(31.23, 121.47, 5.0, weather=weather, t_mean=30.0)
+    pv_cool = simulate_pv_ac(31.23, 121.47, 5.0, weather=weather, t_mean=10.0)
+
+    assert len(pv) == len(weather)
+    assert (pv >= 0).all()
+    assert pv.sum() < pv_cool.sum()
+
+
+def test_simulate_pv_ac_rejects_invalid_weather():
+    index = pd.date_range("2025-06-21 10:00", periods=2, freq="h", tz="Asia/Shanghai")
+    missing = pd.DataFrame({"ghi": [1.0, 2.0], "dni": [1.0, 2.0]}, index=index)
+    with pytest.raises(ValueError, match="missing required columns"):
+        simulate_pv_ac(31.23, 121.47, 5.0, weather=missing)
+
+    invalid = _weather_frame()
+    invalid.loc[invalid.index[0], "ghi"] = -1.0
+    with pytest.raises(ValueError, match="non-negative"):
+        simulate_pv_ac(31.23, 121.47, 5.0, weather=invalid)

@@ -65,6 +65,30 @@ print(results.head())
 
 See [`examples/shanghai_household.py`](examples/shanghai_household.py) for a complete runnable example.
 
+### Use measured or external weather data
+
+Pass a timezone-indexed `pandas.DataFrame` with `ghi`, `dni` and `dhi` in
+W/m². `temp_air` (°C) and `wind_speed` (m/s) are optional; when omitted,
+pvfade uses the same transparent defaults as the synthetic-weather path.
+
+```python
+import pandas as pd
+from pvfade import simulate_pv_ac
+
+weather = pd.read_csv("weather.csv", parse_dates=["timestamp"]).set_index("timestamp")
+pv = simulate_pv_ac(
+    latitude=31.23,
+    longitude=121.47,
+    capacity_kw=6.0,
+    tz="Asia/Shanghai",
+    weather=weather[["ghi", "dni", "dhi", "temp_air", "wind_speed"]],
+)
+```
+
+Naive timestamps are localised to `tz`; timezone-aware timestamps are
+converted to it. The frame is not resampled, so the output contains one row
+per input timestamp. See the function docstring for validation rules.
+
 ## Why this doesn't exist yet
 
 PV-yield tools (pvlib) model generation beautifully but stop at the meter. Battery tools (PyBaMM) model electrochemistry beautifully but stop at the cell terminals. Techno-economic studies usually bolt a *constant* battery onto a PV profile and call it a sizing study — while the literature (e.g. recent solar-plus-storage sizing work) explicitly flags that neglecting long-term cycling and degradation biases lifecycle cost. pvfade is the missing coupling layer: physics-informed fade inside the economic loop.
